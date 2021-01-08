@@ -17,7 +17,10 @@
 package com.alibaba.dubbo.demo.consumer;
 
 import com.alibaba.dubbo.demo.DemoService;
+import com.cedarsoftware.util.DateUtilities;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import java.util.Calendar;
 
 public class Consumer {
 
@@ -31,7 +34,9 @@ public class Consumer {
 
         while (true) {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(10000);
+                Calendar calendar = Calendar.getInstance();
+                System.out.println("xxx " + calendar.getTime());
                 String hello = demoService.sayHello("world"); // call remote method
                 System.out.println(hello); // get result
 

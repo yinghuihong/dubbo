@@ -43,6 +43,10 @@ public class MulticastRegistryTest {
             + "?methods=test1,test2");
     private URL adminUrl = URL.valueOf("dubbo://" + NetUtils.getLocalHost() + "/*");
     private URL consumerUrl = URL.valueOf("subscribe://" + NetUtils.getLocalHost() + "/" + service + "?arg1=1&arg2=2");
+
+    /**
+     * 加入多播组，并监听消息
+     */
     private MulticastRegistry registry = new MulticastRegistry(registryUrl);
 
     /**
@@ -50,6 +54,7 @@ public class MulticastRegistryTest {
      */
     @Before
     public void setUp() throws Exception {
+        // 发送一条注册服务的广播消息
         registry.register(serviceUrl);
     }
 

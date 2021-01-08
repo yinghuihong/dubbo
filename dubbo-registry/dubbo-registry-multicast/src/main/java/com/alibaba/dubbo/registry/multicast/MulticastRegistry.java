@@ -20,34 +20,14 @@ import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
 import com.alibaba.dubbo.common.logger.Logger;
 import com.alibaba.dubbo.common.logger.LoggerFactory;
-import com.alibaba.dubbo.common.utils.ConcurrentHashSet;
-import com.alibaba.dubbo.common.utils.ExecutorUtil;
-import com.alibaba.dubbo.common.utils.NamedThreadFactory;
-import com.alibaba.dubbo.common.utils.NetUtils;
-import com.alibaba.dubbo.common.utils.StringUtils;
-import com.alibaba.dubbo.common.utils.UrlUtils;
+import com.alibaba.dubbo.common.utils.*;
 import com.alibaba.dubbo.registry.NotifyListener;
 import com.alibaba.dubbo.registry.support.FailbackRegistry;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.MulticastSocket;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.net.*;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * MulticastRegistry
@@ -75,6 +55,11 @@ public class MulticastRegistry extends FailbackRegistry {
 
     private volatile boolean admin = false;
 
+    /**
+     * 每一个节点，均有一个MulticastRegistry，监听消息变更（serviceUrl的register、subscribe等）,以及维护着serviceUrl的Providers、Subscribers
+     *
+     * @param url 注册中心的地址
+     */
     public MulticastRegistry(URL url) {
         super(url);
         if (url.isAnyHost()) {
@@ -94,6 +79,7 @@ public class MulticastRegistry extends FailbackRegistry {
                     DatagramPacket recv = new DatagramPacket(buf, buf.length);
                     while (!multicastSocket.isClosed()) {
                         try {
+                            // 监听多播组消息
                             multicastSocket.receive(recv);
                             String msg = new String(recv.getData()).trim();
                             int i = msg.indexOf('\n');
@@ -223,6 +209,7 @@ public class MulticastRegistry extends FailbackRegistry {
             URL url = URL.valueOf(msg.substring(Constants.UNREGISTER.length()).trim());
             unregistered(url);
         } else if (msg.startsWith(Constants.SUBSCRIBE)) {
+            // 接收到订阅消息
             URL url = URL.valueOf(msg.substring(Constants.SUBSCRIBE.length()).trim());
             Set<URL> urls = getRegistered();
             if (urls != null && !urls.isEmpty()) {
@@ -234,6 +221,7 @@ public class MulticastRegistry extends FailbackRegistry {
                                 && !NetUtils.getLocalHost().equals(host)) { // Multiple processes in the same machine cannot be unicast with unicast or there will be only one process receiving information
                             unicast(Constants.REGISTER + " " + u.toFullString(), host);
                         } else {
+                            // 发出注册服务的广播消息，那么订阅者在接收到消息后，就知道有服务提供者啦
                             broadcast(Constants.REGISTER + " " + u.toFullString());
                         }
                     }
@@ -330,10 +318,20 @@ public class MulticastRegistry extends FailbackRegistry {
         ExecutorUtil.gracefulShutdown(cleanExecutor, cleanPeriod);
     }
 
+    /**
+     * 有新服务地址注册，通知订阅者
+     * <p>
+     * 一个服务地址，对应多个订阅者
+     *
+     * @param url serviceUrl 服务地址，URL.valueOf("dubbo://" + NetUtils.getLocalHost() + "/" + service + "?methods=test1,test2");
+     */
     protected void registered(URL url) {
+        // 遍历服务地址列表，若订阅的为'本次注册的URL'，则发起通知
         for (Map.Entry<URL, Set<NotifyListener>> entry : getSubscribed().entrySet()) {
             URL key = entry.getKey();
+            // 找到当前`服务地址`
             if (UrlUtils.isMatch(key, url)) {
+                // 找到当前`服务地址`的订阅者列表
                 Set<URL> urls = received.get(key);
                 if (urls == null) {
                     received.putIfAbsent(key, new ConcurrentHashSet<URL>());
@@ -341,6 +339,7 @@ public class MulticastRegistry extends FailbackRegistry {
                 }
                 urls.add(url);
                 List<URL> list = toList(urls);
+                // 遍历通知？
                 for (NotifyListener listener : entry.getValue()) {
                     notify(key, listener, list);
                     synchronized (listener) {
@@ -359,8 +358,8 @@ public class MulticastRegistry extends FailbackRegistry {
                 if (urls != null) {
                     urls.remove(url);
                 }
-                if (urls == null || urls.isEmpty()){
-                    if (urls == null){
+                if (urls == null || urls.isEmpty()) {
+                    if (urls == null) {
                         urls = new ConcurrentHashSet<URL>();
                     }
                     URL empty = url.setProtocol(Constants.EMPTY_PROTOCOL);

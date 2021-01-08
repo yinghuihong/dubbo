@@ -26,6 +26,7 @@
 
     <!-- use multicast registry center to export service -->
     <dubbo:registry address="multicast://224.5.6.7:1234"/>
+<!--    <dubbo:registry protocol="zookeeper" address="localhost:2181,localhost:2182"/>-->
 
     <!-- use dubbo protocol to export service on port 20880 -->
     <dubbo:protocol name="dubbo" port="20880"/>
