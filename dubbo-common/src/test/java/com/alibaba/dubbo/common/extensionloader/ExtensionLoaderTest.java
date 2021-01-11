@@ -365,6 +365,10 @@ public class ExtensionLoaderTest {
         }
     }
 
+    /**
+     * @throws Exception
+     * @see com.alibaba.dubbo.common.extension.Activate
+     */
     @Test
     public void testLoadActivateExtension() throws Exception {
         // test default

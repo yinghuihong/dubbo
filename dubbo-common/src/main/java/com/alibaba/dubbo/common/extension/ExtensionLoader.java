@@ -30,15 +30,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
@@ -80,6 +72,11 @@ public class ExtensionLoader<T> {
 
     private final ConcurrentMap<Class<?>, String> cachedNames = new ConcurrentHashMap<Class<?>, String>();
 
+    /**
+     * 加载interface全限定名称文件的配置，
+     * 存放在Map中：implKey1 = implClass1, implKey2 = implClass2
+     * 注意：不保存带@Adaptive的接口实现类
+     */
     private final Holder<Map<String, Class<?>>> cachedClasses = new Holder<Map<String, Class<?>>>();
 
     private final Map<String, Activate> cachedActivates = new ConcurrentHashMap<String, Activate>();
@@ -552,6 +549,9 @@ public class ExtensionLoader<T> {
         return clazz;
     }
 
+    /**
+     * @return map单元结构：key为扩展实现名称，value为扩展实现类
+     */
     private Map<String, Class<?>> getExtensionClasses() {
         Map<String, Class<?>> classes = cachedClasses.get();
         if (classes == null) {
@@ -566,6 +566,11 @@ public class ExtensionLoader<T> {
         return classes;
     }
 
+    /**
+     * 从dubbo内部/外部目录、service目录中加载扩展类
+     *
+     * @return
+     */
     // synchronized in getExtensionClasses
     private Map<String, Class<?>> loadExtensionClasses() {
         final SPI defaultAnnotation = type.getAnnotation(SPI.class);
@@ -726,16 +731,24 @@ public class ExtensionLoader<T> {
         }
     }
 
+    /**
+     * @return interface的Adaptive实现类
+     */
     private Class<?> getAdaptiveExtensionClass() {
+        // 一、加载文件方式
+        // 1、加载interface全限定名称文件的配置
+        // 2、实现类中，带有@Adaptive的实现类，即为目标类
         getExtensionClasses();
         if (cachedAdaptiveClass != null) {
             return cachedAdaptiveClass;
         }
+        // 二、拼接代码的方式
         return cachedAdaptiveClass = createAdaptiveExtensionClass();
     }
 
     private Class<?> createAdaptiveExtensionClass() {
         String code = createAdaptiveExtensionClassCode();
+        logger.warn("拼接出的代码：\n" + code);
         ClassLoader classLoader = findClassLoader();
         com.alibaba.dubbo.common.compiler.Compiler compiler = ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.common.compiler.Compiler.class).getAdaptiveExtension();
         return compiler.compile(code, classLoader);

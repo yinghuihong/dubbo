@@ -17,11 +17,7 @@
 
 package com.alibaba.dubbo.common.extension;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * Marker for extension interface
@@ -50,6 +46,18 @@ import java.lang.annotation.Target;
  * Fails to load Extension("mina"). When user configure to use mina, dubbo will complain the extension cannot be loaded,
  * instead of reporting which extract extension implementation fails and the extract reason.
  * </p>
+ * <p>
+ * 一、定义interface类
+ * 1、interface类添加@SPI(value)注解
+ * 2、当value不为空时，指定默认的扩展实现
+ * 3、当value为空时，交由Adaptive决定使用哪个扩展实现
+ * <p>
+ * 二、配置实现类
+ * 1、创建interface的全限定名称文件
+ * 2、文件配置多个interface的扩展实现：
+ * 扩展实现名称1=扩展实现类1
+ * 扩展实现名称2=扩展实现类2
+ * 扩展实现名称3=扩展实现类3
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

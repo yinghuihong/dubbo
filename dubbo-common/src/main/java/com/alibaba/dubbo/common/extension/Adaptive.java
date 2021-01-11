@@ -18,14 +18,35 @@ package com.alibaba.dubbo.common.extension;
 
 import com.alibaba.dubbo.common.URL;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * Provide helpful information for {@link ExtensionLoader} to inject dependency extension instance.
+ * <p>
+ * 自适应：提供有效信息，帮忙注入依赖扩展实例
+ * <p>
+ * 两种用法，但最终的作用都是拥有一个interface的Adaptive实现类，假设有一个interface名为XxxFactory
+ * 一、注解放在实现类上
+ * 1、在编码期，就已有一个Adaptive实现类，文件名比如：AdaptiveXxxFactory.java
+ * 2、@Adaptive的value一定为空
+ * 3、AdaptiveXxxFactory.java 中可自定义实现，决定返回哪个真正实现类（不包括AdaptiveXxxFactory.java自身）
+ * 二、注解放在函数上
+ * 1、在运行期，将会由ExtensionLoader动态拼接代码，生成Adaptive实现类：XxxFactory$Adaptive.java
+ * 2、@Adaptive的value可为空/非空，函数的参数列表中必须有Url参数
+ * 3、XxxFactory$Adaptive.java 的函数实现（可参见 SimpleExt$Adaptive ），生成规则见下文
+ * <p>
+ * 对于注解放在函数上，动态生成代码时，考虑的规则：
+ * 一、获取扩展实现名称（extensionName），依序如下：
+ * 1、函数上的@Adaptive(String [])
+ * 1.1、确保String[] parameterKeys 不为空
+ * 当String[]不为空时，将String[]
+ * 当String[]为空时，拆解interface的类名称，作为parameterKey值
+ * 1.2、遍历 String[] parameterKeys
+ * 依序从URL上查找对应的parameter，若存在parameter，则对应的parameterValue即为扩展实现名称
+ * 若没有存在的parameter，或parameterValue为空，则进入2
+ * 2、通过interface类上的@SPI(string)
+ * string即为扩展实现名称（默认指定的扩展实现）
+ * 二、通过扩展实现名称，找到并实例化扩展实现类
  *
  * @see ExtensionLoader
  * @see URL

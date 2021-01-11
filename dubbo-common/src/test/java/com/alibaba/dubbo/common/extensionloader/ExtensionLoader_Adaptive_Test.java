@@ -29,7 +29,6 @@ import com.alibaba.dubbo.common.extensionloader.ext5.NoAdaptiveMethodExt;
 import com.alibaba.dubbo.common.extensionloader.ext6_inject.Ext6;
 import com.alibaba.dubbo.common.extensionloader.ext6_inject.impl.Ext6Impl2;
 import com.alibaba.dubbo.common.utils.LogUtil;
-
 import junit.framework.Assert;
 import org.junit.Test;
 
@@ -37,11 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.allOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
 public class ExtensionLoader_Adaptive_Test {
@@ -53,11 +48,21 @@ public class ExtensionLoader_Adaptive_Test {
         assertTrue(ext instanceof HasAdaptiveExt_ManualAdaptive);
     }
 
+    /**
+     * @throws Exception
+     * @see SimpleExt#echo(URL, String)
+     */
     @Test
     public void test_getAdaptiveExtension_defaultAdaptiveKey() throws Exception {
+        // 基于echo函数的@Adaptive的parameterKey数组
+        // 在URL上有匹配的parameter，则parameter的value，即为implKey
+        // 在URL上没有匹配的parameter，则直接采用interface上的@SPI(implKey)
         {
             SimpleExt ext = ExtensionLoader.getExtensionLoader(SimpleExt.class).getAdaptiveExtension();
 
+            // echo函数的@Adaptive，没有指定parameterKey数组
+            // 而且URL上也没有interface类名的parameter
+            // 将采用@SPI指定的默认实现
             Map<String, String> map = new HashMap<String, String>();
             URL url = new URL("p1", "1.2.3.4", 1010, "path1", map);
 
@@ -68,6 +73,8 @@ public class ExtensionLoader_Adaptive_Test {
         {
             SimpleExt ext = ExtensionLoader.getExtensionLoader(SimpleExt.class).getAdaptiveExtension();
 
+            // URL上带有interface类名的parameter（simple.ext），并且value（impl2）不为空
+            // 将采用impl2实现
             Map<String, String> map = new HashMap<String, String>();
             map.put("simple.ext", "impl2");
             URL url = new URL("p1", "1.2.3.4", 1010, "path1", map);
@@ -81,13 +88,20 @@ public class ExtensionLoader_Adaptive_Test {
     public void test_getAdaptiveExtension_customizeAdaptiveKey() throws Exception {
         SimpleExt ext = ExtensionLoader.getExtensionLoader(SimpleExt.class).getAdaptiveExtension();
 
+        // URL上带有parameter（key2=impl2）
         Map<String, String> map = new HashMap<String, String>();
         map.put("key2", "impl2");
         URL url = new URL("p1", "1.2.3.4", 1010, "path1", map);
 
+        // yell函数的@Adaptive，指定了parameterKey（key1，key2）
+        // 故key2匹配URL上的parameter
+        // 将采用impl2实现
         String echo = ext.yell(url, "haha");
         assertEquals("Ext1Impl2-yell", echo);
 
+        // URL上带有parameter（key1=impl3）
+        // 故key1优先匹配URL上的parameter
+        // 将采用impl3实现
         url = url.addParameter("key1", "impl3"); // note: URL is value's type
         echo = ext.yell(url, "haha");
         assertEquals("Ext1Impl3-yell", echo);
@@ -162,8 +176,13 @@ public class ExtensionLoader_Adaptive_Test {
         }
     }
 
+    /**
+     * @throws Exception
+     * @see SimpleExt$Adaptive#bang() 见生成的实现类代码，为抛出异常的实现
+     */
     @Test
     public void test_getAdaptiveExtension_ExceptionWhenNotAdaptiveMethod() throws Exception {
+        // ext为SimpleExt$Adaptive实现类的实例
         SimpleExt ext = ExtensionLoader.getExtensionLoader(SimpleExt.class).getAdaptiveExtension();
 
         Map<String, String> map = new HashMap<String, String>();
