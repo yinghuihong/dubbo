@@ -33,7 +33,7 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.runners.Parameterized.*;
+import static org.junit.runners.Parameterized.Parameters;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -54,6 +54,12 @@ public class CacheFilterTest {
         this.cacheFactory = cacheFactory;
     }
 
+    /**
+     * 匹配构造函数的参数
+     *
+     * @return
+     * @see CacheFilterTest#CacheFilterTest(String, CacheFactory)
+     */
     @Parameters
     public static List<Object[]> cacheFactories() {
         return Arrays.asList(new Object[][]{
@@ -70,6 +76,7 @@ public class CacheFilterTest {
 
         URL url = URL.valueOf("test://test:11/test?cache=" + this.cacheType);
 
+        // mock 函数调用的返回值
         given(invoker.invoke(invocation)).willReturn(new RpcResult("value"));
         given(invoker.getUrl()).willReturn(url);
 
@@ -92,7 +99,7 @@ public class CacheFilterTest {
         invocation.setParameterTypes(new Class<?>[]{});
         invocation.setArguments(new Object[]{});
 
-        cacheFilter.invoke(invoker, invocation);
+        cacheFilter.invoke(invoker, invocation); // 生成缓存
         RpcResult rpcResult1 = (RpcResult) cacheFilter.invoke(invoker1, invocation);
         RpcResult rpcResult2 = (RpcResult) cacheFilter.invoke(invoker2, invocation);
         Assert.assertEquals(rpcResult1.getValue(), rpcResult2.getValue());
@@ -105,7 +112,7 @@ public class CacheFilterTest {
         invocation.setParameterTypes(new Class<?>[]{String.class});
         invocation.setArguments(new Object[]{"arg1"});
 
-        cacheFilter.invoke(invoker, invocation);
+        cacheFilter.invoke(invoker, invocation); // 生成缓存
         RpcResult rpcResult1 = (RpcResult) cacheFilter.invoke(invoker1, invocation);
         RpcResult rpcResult2 = (RpcResult) cacheFilter.invoke(invoker2, invocation);
         Assert.assertEquals(rpcResult1.getValue(), rpcResult2.getValue());
@@ -118,7 +125,7 @@ public class CacheFilterTest {
         invocation.setParameterTypes(new Class<?>[]{String.class});
         invocation.setArguments(new Object[]{"arg2"});
 
-        cacheFilter.invoke(invoker3, invocation);
+        cacheFilter.invoke(invoker3, invocation); // 异常，不生成缓存
         RpcResult rpcResult = (RpcResult) cacheFilter.invoke(invoker2, invocation);
         Assert.assertEquals(rpcResult.getValue(), "value2");
     }
@@ -129,8 +136,8 @@ public class CacheFilterTest {
         invocation.setParameterTypes(new Class<?>[]{String.class});
         invocation.setArguments(new Object[]{"arg3"});
 
-        cacheFilter.invoke(invoker4, invocation);
-        RpcResult rpcResult1 = (RpcResult) cacheFilter.invoke(invoker1, invocation);
+        cacheFilter.invoke(invoker4, invocation); // null值，不生成缓存
+        RpcResult rpcResult1 = (RpcResult) cacheFilter.invoke(invoker1, invocation); // 生成缓存
         RpcResult rpcResult2 = (RpcResult) cacheFilter.invoke(invoker2, invocation);
         Assert.assertEquals(rpcResult1.getValue(), "value1");
         Assert.assertEquals(rpcResult2.getValue(), "value1");

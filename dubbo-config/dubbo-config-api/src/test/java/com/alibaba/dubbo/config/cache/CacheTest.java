@@ -21,15 +21,9 @@ import com.alibaba.dubbo.cache.CacheFactory;
 import com.alibaba.dubbo.cache.support.threadlocal.ThreadLocalCache;
 import com.alibaba.dubbo.common.URL;
 import com.alibaba.dubbo.common.extension.ExtensionLoader;
-import com.alibaba.dubbo.config.ApplicationConfig;
-import com.alibaba.dubbo.config.MethodConfig;
-import com.alibaba.dubbo.config.ProtocolConfig;
-import com.alibaba.dubbo.config.ReferenceConfig;
-import com.alibaba.dubbo.config.RegistryConfig;
-import com.alibaba.dubbo.config.ServiceConfig;
+import com.alibaba.dubbo.config.*;
 import com.alibaba.dubbo.rpc.Invocation;
 import com.alibaba.dubbo.rpc.RpcInvocation;
-
 import junit.framework.TestCase;
 import org.junit.Test;
 
@@ -58,6 +52,7 @@ public class CacheTest extends TestCase {
 
             MethodConfig method = new MethodConfig();
             method.setName("findCache");
+            // 设置cache的方式，服务端根据该参数？
             method.setCache(type);
             reference.setMethods(Arrays.asList(method));
 
@@ -70,12 +65,15 @@ public class CacheTest extends TestCase {
                     String result = cacheService.findCache("0");
                     assertTrue(fix == null || fix.equals(result));
                     fix = result;
+                    System.out.println("xxx client side " + fix);
                     Thread.sleep(100);
                 }
 
                 if ("lru".equals(type)) {
                     // default cache.size is 1000 for LRU, should have cache expired if invoke more than 1001 times
+                    // 默认配置的缓存数为1000个，n==0的缓存已在前面代码中生成了，此处模拟1001个不同参数的调用，会将n==0的缓存剔除。
                     for (int n = 0; n < 1001; n++) {
+                        // 连续十次调用，后面九次返回的缓存，并不会调用到实现函数
                         String pre = null;
                         for (int i = 0; i < 10; i++) {
                             String result = cacheService.findCache(String.valueOf(n));
@@ -85,6 +83,7 @@ public class CacheTest extends TestCase {
                     }
 
                     // verify if the first cache item is expired in LRU cache
+                    // 校验n==0的缓存是否被剔除
                     String result = cacheService.findCache("0");
                     assertFalse(fix == null || fix.equals(result));
                 }
@@ -96,6 +95,11 @@ public class CacheTest extends TestCase {
         }
     }
 
+    /**
+     * @throws Exception
+     * @see com.alibaba.dubbo.cache.filter.CacheFilter
+     * @see com.alibaba.dubbo.cache.support.lru.LruCache cache.size 默认数值1000
+     */
     @Test
     public void testCache() throws Exception {
         testCache("lru");

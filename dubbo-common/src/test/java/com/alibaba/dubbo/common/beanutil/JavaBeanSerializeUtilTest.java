@@ -16,24 +16,14 @@
  */
 package com.alibaba.dubbo.common.beanutil;
 
-import com.alibaba.dubbo.common.model.person.BigPerson;
-import com.alibaba.dubbo.common.model.person.FullAddress;
-import com.alibaba.dubbo.common.model.person.PersonInfo;
-import com.alibaba.dubbo.common.model.person.PersonStatus;
-import com.alibaba.dubbo.common.model.person.Phone;
+import com.alibaba.dubbo.common.model.person.*;
 import com.alibaba.dubbo.common.utils.PojoUtilsTest;
-
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class JavaBeanSerializeUtilTest {
 
@@ -305,6 +295,14 @@ public class JavaBeanSerializeUtilTest {
         assertEqualsPrimitive(child.getAge(), childDescriptor.getProperty("age"));
     }
 
+    /**
+     * 演示对象的序列化，覆盖了对象的七种类型
+     *
+     * @throws Exception
+     * @see JavaBeanDescriptor#TYPE_CLASS
+     * @see JavaBeanDescriptor#TYPE_ENUM
+     * @see JavaBeanDescriptor#TYPE_BEAN
+     */
     @Test
     public void testBeanSerialize() throws Exception {
         Bean bean = new Bean();
@@ -321,8 +319,11 @@ public class JavaBeanSerializeUtilTest {
         Map<String, FullAddress> map = new HashMap<String, FullAddress>();
         FullAddress address = new FullAddress();
         map.put("first", address);
+//        FullAddress address2 = new FullAddress();
+//        map.put("second", address2);
         bean.setAddresses(map);
 
+        // 可调试查看生成的descriptor内部结构，properties保存的object也为JavaBeanDescriptor
         JavaBeanDescriptor descriptor = JavaBeanSerializeUtil.serialize(bean, JavaBeanAccessor.METHOD);
         Assert.assertTrue(descriptor.isBeanType());
         assertEqualsPrimitive(bean.getDate(), descriptor.getProperty("date"));

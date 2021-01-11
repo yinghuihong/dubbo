@@ -46,9 +46,11 @@ public class CacheFilter implements Filter {
         if (cacheFactory != null && ConfigUtils.isNotEmpty(invoker.getUrl().getMethodParameter(invocation.getMethodName(), Constants.CACHE_KEY))) {
             Cache cache = cacheFactory.getCache(invoker.getUrl(), invocation);
             if (cache != null) {
+                // 将调用函数携带的参数值，作为缓存的key
                 String key = StringUtils.toArgumentString(invocation.getArguments());
                 Object value = cache.get(key);
                 if (value != null) {
+                    // 存在缓存，直接返回
                     return new RpcResult(value);
                 }
                 Result result = invoker.invoke(invocation);

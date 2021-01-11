@@ -43,18 +43,24 @@ public class TpsLimitFilterTest {
         filter.invoke(invoker, invocation);
     }
 
+    /**
+     * tps 默认每分钟
+     * @throws Exception
+     */
     @Test(expected = RpcException.class)
     public void testFail() throws Exception {
         URL url = URL.valueOf("test://test");
         url = url.addParameter(Constants.INTERFACE_KEY,
                 "com.alibaba.dubbo.rpc.file.TpsService");
         url = url.addParameter(Constants.TPS_LIMIT_RATE_KEY, 5);
+        System.out.println("xxx " + url);
         Invoker<TpsLimitFilterTest> invoker = new MyInvoker<TpsLimitFilterTest>(url);
         Invocation invocation = new MockInvocation();
         for (int i = 0; i < 10; i++) {
             try {
                 filter.invoke(invoker, invocation);
             } catch (Exception e) {
+                System.out.println("xxx " + e.getMessage());
                 assertTrue(i >= 5);
                 throw e;
             }
